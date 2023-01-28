@@ -6,83 +6,110 @@
 //
 
 import SwiftUI
-import CoreData
 
 struct ContentView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
-
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
+
+        Home()
+    }
+
+    struct Home: View {
+
+        @State var selectedTab = "Home"
+        var edges = UIApplication.shared.windows.first?.safeAreaInsets
+        @Namespace var animation
+
+        var body: some View {
+
+            VStack(spacing: 0) {
+                GeometryReader { _ in
+
+                    ZStack {
+                        ScrollView {
+                            
+                        }
+                            .opacity(selectedTab == "Home" ? 1 : 0)
+
+                        Text("Search")
+                            .opacity(selectedTab == "Search" ? 1 : 0)
+
+                        Text("Profile")
+                            .opacity(selectedTab == "Profile" ? 1 : 0)
                     }
                 }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+
+
+                HStack(spacing: 0) {
+                    ForEach(tabs, id: \.self) { tab in
+
+                        TabButton(title: tab, selectedTab: $selectedTab, animation: animation)
+
+                        if tab != tabs.last {
+                            Spacer(minLength: 0)
+                        }
                     }
                 }
+                    .padding(.horizontal, 30)
+                    .padding(.bottom, edges?.bottom == 0 ? 15 : edges?.bottom)
+                    .background(Color.white)
             }
-            Text("Select an item")
+                .ignoresSafeArea(.all, edges: .bottom)
+                .background(Color.black.opacity(0.06).ignoresSafeArea(.all, edges: .all))
+        }
+
+    }
+
+    struct TabButton: View {
+        var title: String
+        @Binding var selectedTab: String
+        var animation: Namespace.ID
+
+        var body: some View {
+            Button(action: {
+                withAnimation { selectedTab = title }
+            }) {
+                VStack(spacing: 6) {
+
+                    ZStack {
+                        CustomShape()
+                            .fill(Color.clear)
+                            .frame(width: 45, height: 6)
+                        if selectedTab == title {
+                            CustomShape()
+                                .fill(Color.yellow)
+                                .frame(width: 45, height: 6)
+                                .matchedGeometryEffect(id: "Tab_Change", in: animation)
+                        }
+                    }
+                        .padding(.bottom, 10)
+
+
+                    Image(title)
+                        .renderingMode(.template)
+                        .resizable()
+                        .foregroundColor(selectedTab == title ? Color(.black) : Color.black.opacity(0.5))
+                        .frame(width: 24, height: 2)
+                    Text(title)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(Color.black.opacity(selectedTab == title ? 0.6 : 0.2))
+                }
+            }
         }
     }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
+    struct CustomShape: Shape {
+        func path(in rect: CGRect) -> Path {
+            let path = UIBezierPath(roundedRect: rect, byRoundingCorners: [.bottomLeft, .bottomRight], cornerRadii: CGSize(width: 10, height: 10))
+            return Path(path.cgPath)
         }
     }
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
+    struct ContentView_Previews: PreviewProvider {
+        static var previews: some View {
+            ContentView()
         }
     }
 }
 
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-    }
-}
+let tabs = ["Home", "Search", "Profile"]
