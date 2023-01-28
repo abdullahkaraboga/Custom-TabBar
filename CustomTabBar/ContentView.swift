@@ -18,24 +18,50 @@ struct ContentView: View {
         @State var selectedTab = "Home"
         var edges = UIApplication.shared.windows.first?.safeAreaInsets
         @Namespace var animation
+        @StateObject var modelData = ModelView()
 
+        fileprivate func extractedFunc() -> Text {
+            return Text("Search")
+        }
+        
         var body: some View {
 
             VStack(spacing: 0) {
                 GeometryReader { _ in
 
                     ZStack {
-                        ScrollView {
-                            
+                        NavigationView {
+                            ScrollView {
+                                ForEach(1...30, id: \.self) { i in
+                                    NavigationLink(destination: Text("List item : \(i)")) {
+                                        VStack(alignment: .leading) {
+                                            Text("List item : \(i)")
+                                                .padding(.all, 8)
+                                                .foregroundColor(.black)
+                                            Divider()
+                                        }
+                                    }
+                                }
+                                    .padding(.bottom)
+                            }
+                                .navigationBarHidden(true)
                         }
                             .opacity(selectedTab == "Home" ? 1 : 0)
 
-                        Text("Search")
+                        extractedFunc()
                             .opacity(selectedTab == "Search" ? 1 : 0)
 
-                        Text("Profile")
-                            .opacity(selectedTab == "Profile" ? 1 : 0)
+                        Text("Options")
+                            .opacity(selectedTab == "Options" ? 1 : 0)
                     }
+                }
+                    .onChange(of: selectedTab) { (_) in
+                    switch (selectedTab) {
+                    case "Search": if !modelData.isSearchLoad { modelData.searchLoad() }
+                    case "Options": if !modelData.isOptionsLoad { modelData.optionsLoad() }
+                    default: ()
+                    }
+
                 }
 
 
@@ -88,7 +114,7 @@ struct ContentView: View {
                         .renderingMode(.template)
                         .resizable()
                         .foregroundColor(selectedTab == title ? Color(.black) : Color.black.opacity(0.5))
-                        .frame(width: 24, height: 2)
+                        .frame(width: 20, height: 20)
                     Text(title)
                         .font(.caption)
                         .fontWeight(.bold)
@@ -112,4 +138,24 @@ struct ContentView: View {
     }
 }
 
-let tabs = ["Home", "Search", "Profile"]
+let tabs = ["Home", "Search", "Options"]
+
+class ModelView: ObservableObject {
+    @Published var isSearchLoad = false
+    @Published var isOptionsLoad = false
+
+    init() {
+        print("Home Data Loaded")
+    }
+
+    func searchLoad() {
+        print("Search load")
+        isSearchLoad = true
+    }
+
+    func optionsLoad() {
+        print("Options load")
+        isOptionsLoad = true
+    }
+
+}
